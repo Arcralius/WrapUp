@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WrapUp — Shared Library</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div>
+        <h1>WrapUp</h1>
+        <p class="tagline" id="tagline">Shared gaming library</p>
+      </div>
+      <div class="topbar-actions">
+        <span class="badge badge-undated" title="You're viewing a read-only shared library">Read only</span>
+      </div>
+    </header>
+
+    <div id="sharedContent" style="display:none">
+      <section class="hero-stats" id="heroStats"></section>
+
+      <section class="chart-card">
+        <h2>Games completed per year</h2>
+        <div id="yearChart" class="year-chart"></div>
+      </section>
+
+      <section class="chart-card" id="pieCard" style="display:none">
+        <h2 id="pieTitle">Hours by game</h2>
+        <div class="pie-layout">
+          <svg id="pieSvg" viewBox="0 0 200 200" class="pie-svg"></svg>
+          <div class="pie-legend" id="pieLegend"></div>
+        </div>
+      </section>
+
+      <nav class="tabs" id="tabs"></nav>
+
+      <section class="content-header">
+        <h2 id="sectionTitle">All Time</h2>
+        <div class="section-stats" id="sectionStats"></div>
+      </section>
+
+      <section id="gameGrid"></section>
+    </div>
+
+    <div class="empty-state" id="sharedError" style="display:none"></div>
+  </div>
+
+  <script src="shared.js"></script>
+</body>
+</html>

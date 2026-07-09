@@ -1,0 +1,14 @@
+services:
+  wrapup:
+    image: arcralius/wrapup:latest
+    # build: .   # uncomment to build from local source instead of the published image
+    ports:
+      - "3000:3000"
+    volumes:
+      - wrapup-db:/app/db
+      - wrapup-uploads:/app/uploads
+    restart: unless-stopped
+
+volumes:
+  wrapup-db:
+  wrapup-uploads:

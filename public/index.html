@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WrapUp — Gaming Year in Review</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div>
+        <h1>WrapUp</h1>
+        <p class="tagline">Your gaming, year by year.</p>
+      </div>
+      <div class="topbar-actions">
+        <a class="btn-nav" href="timeline.html">
+          <svg class="nav-icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="17" rx="2"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <circle cx="8" cy="14" r="1.4" fill="currentColor" stroke="none"></circle>
+            <circle cx="12.5" cy="14" r="1.4" fill="currentColor" stroke="none"></circle>
+            <circle cx="8" cy="17.5" r="1.4" fill="currentColor" stroke="none"></circle>
+          </svg>
+          Timeline
+        </a>
+        <button id="addGameBtn" class="btn-refresh" title="Manually add a game">+ Add Game</button>
+        <button id="shareBtn" class="btn-refresh" title="Share a read-only link to your library">Share</button>
+        <label class="btn-upload" for="uploadInput">
+          ⬆ Upload list
+          <input type="file" id="uploadInput" accept=".md,.markdown,.txt,text/markdown,text/plain" hidden />
+        </label>
+        <button id="refreshBtn" class="btn-refresh" title="Re-read the current source file and reload">
+          <span class="refresh-icon">↻</span> Refresh
+        </button>
+        <span class="user-chip" id="userChip"></span>
+        <button id="logoutBtn" class="btn-refresh" title="Log out">Log out</button>
+      </div>
+    </header>
+
+    <p class="source-line" id="sourceLine"></p>
+    <p class="upload-status" id="uploadStatus"></p>
+
+    <div class="enrich-banner" id="enrichBanner">
+      <span class="enrich-spinner"></span>
+      <span id="enrichBannerText">Fetching Metacritic covers &amp; links…</span>
+    </div>
+
+    <section class="hero-stats" id="heroStats"></section>
+
+    <section class="chart-card">
+      <h2>Games completed per year</h2>
+      <div id="yearChart" class="year-chart"></div>
+    </section>
+
+    <section class="chart-card" id="pieCard" style="display:none">
+      <h2 id="pieTitle">Hours by game</h2>
+      <div class="pie-layout">
+        <svg id="pieSvg" viewBox="0 0 200 200" class="pie-svg"></svg>
+        <div class="pie-legend" id="pieLegend"></div>
+      </div>
+    </section>
+
+    <nav class="tabs" id="tabs"></nav>
+
+    <section class="content-header">
+      <h2 id="sectionTitle">All Time</h2>
+      <div class="section-stats" id="sectionStats"></div>
+    </section>
+
+    <section id="gameGrid"></section>
+  </div>
+
+  <div class="modal-overlay" id="addGameOverlay">
+    <div class="modal-card">
+      <h2 class="modal-title" id="gameModalTitle">Add a game</h2>
+
+      <div class="auth-error" id="addGameError"></div>
+
+      <form id="addGameForm">
+        <div class="auth-field">
+          <label for="gameName">Game name</label>
+          <input type="text" id="gameName" name="name" maxlength="200" required />
+        </div>
+        <div class="auth-field">
+          <label for="gameStatus">Status</label>
+          <select id="gameStatus" name="status">
+            <option value="completed">Completed</option>
+            <option value="in_progress">Still playing</option>
+            <option value="live_service">Live service (ongoing, can't be "finished")</option>
+          </select>
+        </div>
+        <div class="auth-field" id="gameStartField">
+          <label for="gameStart">Date started (optional)</label>
+          <input type="date" id="gameStart" name="dateStarted" />
+        </div>
+        <div class="auth-field" id="gameEndField">
+          <label for="gameEnd">Date completed</label>
+          <input type="date" id="gameEnd" name="dateCompleted" />
+        </div>
+        <div class="auth-field" id="gameHoursField">
+          <label for="gameHours">Hours to beat (optional)</label>
+          <input type="number" id="gameHours" name="hltbHours" min="0" step="0.5" placeholder="Leave blank if unknown" />
+        </div>
+        <div class="auth-field" id="gameMetacriticField">
+          <label for="gameMetacriticUrl">Metacritic URL (optional)</label>
+          <input type="url" id="gameMetacriticUrl" name="metacriticUrl" placeholder="https://www.metacritic.com/game/..." />
+          <span class="auth-hint">Fixes a wrong cover or link — paste the correct Metacritic game page.</span>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn-refresh" id="cancelAddGame">Cancel</button>
+          <button type="submit" class="auth-submit" id="addGameSubmit">Add game</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="shareOverlay">
+    <div class="modal-card">
+      <h2 class="modal-title">Share your library</h2>
+      <p class="auth-hint" style="margin-bottom:16px">
+        Anyone with a link can view that scope — stats, games, covers. They can't edit, add, delete, or upload anything.
+        Share the whole library, or just a single year's wrap-up.
+      </p>
+
+      <div id="shareList"></div>
+
+      <div class="auth-field">
+        <label for="shareScopeSelect">Create a new link for</label>
+        <select id="shareScopeSelect">
+          <option value="">Whole library</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="auth-submit" id="createShareBtn">Create link</button>
+      </div>
+
+      <p class="auth-hint" id="shareStatus">&nbsp;</p>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-refresh" id="closeShareModal">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

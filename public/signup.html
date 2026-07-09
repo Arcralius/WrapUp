@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign up — WrapUp</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body>
+  <div class="auth-card">
+    <h1 class="auth-title">Create your account</h1>
+    <p class="auth-subtitle">Track your own gaming year in review.</p>
+
+    <div class="auth-error" id="authError"></div>
+
+    <form id="signupForm">
+      <div class="auth-field">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" autocomplete="username" minlength="3" maxlength="32" required />
+        <span class="auth-hint">3-32 characters: letters, numbers, _ or -</span>
+      </div>
+      <div class="auth-field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" autocomplete="email" required />
+      </div>
+      <div class="auth-field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="new-password" minlength="8" required />
+        <span class="auth-hint">At least 8 characters</span>
+      </div>
+      <div class="auth-field">
+        <label for="confirmPassword">Confirm password</label>
+        <input type="password" id="confirmPassword" name="confirmPassword" autocomplete="new-password" minlength="8" required />
+      </div>
+      <button type="submit" class="auth-submit" id="submitBtn">Sign up</button>
+    </form>
+
+    <p class="auth-switch">Already have an account? <a href="login.html">Log in</a></p>
+  </div>
+
+  <script src="auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,9 @@
+uploads/*
+!uploads/.gitkeep
+node_modules/
+db/*.db
+db/*.db-*
+.claude/
+*.log
+.env
+.env.*

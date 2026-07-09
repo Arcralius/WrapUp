@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Timeline — WrapUp</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="timeline.css" />
+</head>
+<body>
+  <div class="tl-page">
+    <header class="topbar tl-topbar">
+      <div>
+        <h1>WrapUp</h1>
+        <p class="tagline">Your gaming, month by month.</p>
+      </div>
+      <div class="topbar-actions">
+        <a class="btn-nav" href="index.html">← Dashboard</a>
+        <span class="user-chip" id="userChip"></span>
+        <button id="logoutBtn" class="btn-refresh" title="Log out">Log out</button>
+      </div>
+    </header>
+
+    <div class="tl-layout">
+      <aside class="tl-sidebar">
+        <div class="tl-sidebar-title">Year</div>
+        <nav class="tl-year-list" id="yearList"></nav>
+      </aside>
+
+      <main class="tl-main" id="tlMain">
+        <div class="tl-empty" id="tlEmpty" style="display:none">No completed games with a known date this year.</div>
+        <div id="tlMonths"></div>
+      </main>
+    </div>
+  </div>
+
+  <script src="timeline.js"></script>
+</body>
+</html>
