@@ -125,6 +125,25 @@ upgrades) without losing anything.
   `X-Forwarded-*` headers you don't actually control lets a client spoof
   its own IP — which matters here since rate limiting keys on it.
 
+## Troubleshooting
+
+**`unable to open database file`** — the `db/` volume is mounted but the
+container can't write to it. This happens on hosting platforms that don't
+run the container as the image's built-in `node` user or don't preserve its
+ownership on a fresh volume (Kubernetes PVCs mount empty, root-owned storage
+regardless of what the image had baked in; several PaaS platforms run
+containers as an arbitrary, randomly-assigned UID). `db/` and `uploads/` are
+world-writable in the image specifically so this shouldn't happen — if
+you're still hitting it, check whatever your platform calls "run as user" /
+`fsGroup` / `securityContext` and make sure it isn't overriding that.
+
+**`ValidationError ... X-Forwarded-For ...` / the app crashes behind a
+reverse proxy** — express-rate-limit refuses to key rate limits off an
+`X-Forwarded-For` header unless you've told Express to trust it. Set
+`TRUST_PROXY=1` (see the Security notes below) if you're behind nginx,
+Traefik, Cloudflare, or any platform's edge proxy — the app no longer
+crashes without it, but rate limiting is more accurate with it set.
+
 ## Tech stack
 
 Node.js + Express, `node:sqlite` (SQLite, no native deps), vanilla

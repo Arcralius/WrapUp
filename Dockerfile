@@ -34,7 +34,20 @@ COPY public ./public
 # markdown source files. Both are the only state that isn't reproducible
 # from the image itself, so both are declared as volumes — removing and
 # recreating the container must not lose either.
-RUN mkdir -p db uploads && chown -R node:node /app
+#
+# db/ and uploads/ are made world-writable (not just owned by `node`)
+# because a *lot* of hosting platforms don't honor this image's USER/chown
+# at all: Kubernetes PVCs mount fresh, root-owned, empty storage that
+# ignores whatever the image had baked in; several PaaS platforms run
+# containers as an arbitrary, randomly-assigned UID for their own security
+# reasons. `chown -R node:node` alone only works when the platform actually
+# runs the process as uid 1000 against a volume Docker itself provisioned
+# (its plain `docker run -v` / compose behavior) — anywhere else it leaves
+# an owner mismatch and node:sqlite fails with "unable to open database
+# file". World-writable data dirs are the standard fix for "arbitrary
+# runtime UID" environments; everything else in the image stays owned by
+# node/root as normal.
+RUN mkdir -p db uploads && chown -R node:node /app && chmod -R 777 db uploads
 VOLUME ["/app/db", "/app/uploads"]
 
 USER node

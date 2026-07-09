@@ -63,7 +63,23 @@ app.use(helmet({
 // tighter one on signup/login specifically — those are the endpoints an
 // attacker actually benefits from hammering (account enumeration, credential
 // stuffing, or just burning CPU on scrypt hashing).
-app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, limit: 600, standardHeaders: true, legacyHeaders: false }));
+//
+// validate.xForwardedForHeader is off deliberately: by default
+// express-rate-limit *throws* (crashing every request, not just logging a
+// warning) the moment it sees an X-Forwarded-For header while `trust proxy`
+// is unset — which is exactly what almost every hosting platform's edge
+// proxy sends. Without TRUST_PROXY configured, rate limiting falls back to
+// keying on the raw socket address (accurate when directly exposed, merged
+// across clients behind an unconfigured proxy) — degraded, not down.
+const rateLimitValidation = { xForwardedForHeader: false };
+
+app.use('/api', rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  validate: rateLimitValidation,
+}));
 app.use(
   ['/api/auth/signup', '/api/auth/login'],
   rateLimit({
@@ -71,6 +87,7 @@ app.use(
     limit: 20,
     standardHeaders: true,
     legacyHeaders: false,
+    validate: rateLimitValidation,
     message: { ok: false, error: 'Too many attempts. Try again later.' },
   })
 );
