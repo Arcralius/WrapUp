@@ -219,8 +219,11 @@ const VALID_STATUSES = new Set(['completed', 'in_progress', 'live_service']);
 
 // Shared by create (POST) and edit (PATCH) — same shape, same rules either
 // way. `status` is explicit rather than inferred from a "still playing"
-// boolean so live_service (no dates at all, can't be "finished") round-trips
-// correctly through edits instead of silently becoming in_progress.
+// boolean so live_service (can't be "finished", so never has a completion
+// date) round-trips correctly through edits instead of silently becoming
+// in_progress. A live_service game CAN have a start date though — "started
+// playing this ongoing game on X" is meaningful even though it never has an
+// end date — so only dateCompleted is restricted to completed games.
 function parseGamePayload(body) {
   const { name, status, dateStarted, dateCompleted, hltbHours } = body || {};
 
@@ -239,9 +242,6 @@ function parseGamePayload(body) {
   if (status !== 'completed' && dateCompleted != null) {
     return { error: 'Only a completed game can have a completion date.' };
   }
-  if (status === 'live_service' && dateStarted != null) {
-    return { error: "Live service games don't track a start date." };
-  }
   if (dateStarted && dateCompleted && dateStarted > dateCompleted) {
     return { error: 'Start date must be before the completion date.' };
   }
@@ -259,7 +259,7 @@ function parseGamePayload(body) {
     data: {
       name: name.trim(),
       status,
-      dateStarted: status === 'live_service' ? null : (dateStarted || null),
+      dateStarted: dateStarted || null,
       dateCompleted: status === 'completed' ? dateCompleted : null,
       year,
       hours,

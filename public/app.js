@@ -3,6 +3,7 @@ const state = {
   activeTab: 'all',
   editingGameId: null,
   editingMetacriticUrl: null,
+  searching: false,
 };
 
 const heroStatsEl = document.getElementById('heroStats');
@@ -27,7 +28,6 @@ const addGameSubmit = document.getElementById('addGameSubmit');
 const cancelAddGame = document.getElementById('cancelAddGame');
 const gameModalTitle = document.getElementById('gameModalTitle');
 const gameStatusSelect = document.getElementById('gameStatus');
-const gameStartField = document.getElementById('gameStartField');
 const gameEndField = document.getElementById('gameEndField');
 const gameEndInput = document.getElementById('gameEnd');
 const gameMetacriticUrlInput = document.getElementById('gameMetacriticUrl');
@@ -42,6 +42,9 @@ const shareScopeSelect = document.getElementById('shareScopeSelect');
 const createShareBtn = document.getElementById('createShareBtn');
 const shareStatusEl = document.getElementById('shareStatus');
 const closeShareModal = document.getElementById('closeShareModal');
+const gameSearchInput = document.getElementById('gameSearchInput');
+const clearSearchBtn = document.getElementById('clearSearchBtn');
+const yearChartCardEl = yearChartEl.closest('.chart-card');
 
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 let enrichPollTimer = null;
@@ -166,6 +169,65 @@ function selectTab(key) {
   loadGames(key);
 }
 
+// --- Search: filters across the whole library, not just the active tab.
+// Tabs/year-chart/pie hide while searching (their per-scope numbers don't
+// mean anything against a cross-scope result list) and come back once the
+// search is cleared. Fetches fresh on each debounced keystroke rather than
+// maintaining a synced cache — simplest correct option at this data scale.
+let searchDebounceTimer = null;
+
+function enterSearchMode() {
+  state.searching = true;
+  tabsEl.style.display = 'none';
+  yearChartCardEl.style.display = 'none';
+  pieCard.style.display = 'none';
+}
+
+function exitSearchMode() {
+  state.searching = false;
+  tabsEl.style.display = '';
+  yearChartCardEl.style.display = '';
+  loadGames(state.activeTab);
+}
+
+async function runSearch(query) {
+  const res = await fetch('/api/games');
+  const games = await res.json();
+  const q = query.toLowerCase();
+  const results = games.filter((g) => g.name.toLowerCase().includes(q));
+
+  sectionTitleEl.textContent = `Search: "${query}"`;
+  sectionStatsEl.textContent = `${results.length} result${results.length === 1 ? '' : 's'}`;
+  renderGameGrid(results, { groupByMonth: false });
+}
+
+gameSearchInput.addEventListener('input', () => {
+  const query = gameSearchInput.value.trim();
+  clearSearchBtn.style.display = query ? '' : 'none';
+  clearTimeout(searchDebounceTimer);
+
+  if (!query) {
+    if (state.searching) exitSearchMode();
+    return;
+  }
+
+  if (!state.searching) enterSearchMode();
+  searchDebounceTimer = setTimeout(() => runSearch(query), 150);
+});
+
+clearSearchBtn.addEventListener('click', () => {
+  gameSearchInput.value = '';
+  clearSearchBtn.style.display = 'none';
+  gameSearchInput.focus();
+  if (state.searching) exitSearchMode();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.activeElement === gameSearchInput && gameSearchInput.value) {
+    clearSearchBtn.click();
+  }
+});
+
 async function loadGames(tabKey) {
   let url = '/api/games';
   let title = 'All Time';
@@ -246,7 +308,7 @@ function buildGameCard(g) {
   let dateText = '';
   if (g.date_completed) {
     dateText = fmtDate(g.date_completed);
-  } else if (g.status === 'in_progress' && g.date_started) {
+  } else if (g.date_started) {
     dateText = `Started ${fmtDate(g.date_started)}`;
   }
 
@@ -357,12 +419,24 @@ function renderGameGrid(games, { groupByMonth = false } = {}) {
   }
 }
 
+// Re-runs whatever the user is currently looking at — the active search, or
+// the active tab — so editing/deleting/adding a game from within a search
+// result doesn't silently kick them back out to the tab view.
+async function refreshCurrentView() {
+  const query = gameSearchInput.value.trim();
+  if (state.searching && query) {
+    await runSearch(query);
+  } else {
+    await loadGames(state.activeTab);
+  }
+}
+
 async function deleteGame(id) {
   if (!window.confirm('Remove this game from your list?')) return;
   const res = await fetch(`/api/games/${id}`, { method: 'DELETE' });
   if (!res.ok) return;
   await loadSummary();
-  await loadGames(state.activeTab);
+  await refreshCurrentView();
 }
 
 // --- Hours-by-game pie chart (dataviz: fixed categorical order, "Other"
@@ -471,7 +545,9 @@ function escapeXml(str) {
 
 function updateModalFieldVisibility() {
   const status = gameStatusSelect.value;
-  gameStartField.style.display = status === 'live_service' ? 'none' : '';
+  // A live_service game can never have a completion date (it can't be
+  // "finished"), but a start date is still meaningful — "started playing
+  // this ongoing game on X" — so only the end-date field is status-gated.
   gameEndField.style.display = status === 'completed' ? '' : 'none';
   gameEndInput.required = status === 'completed';
 }
@@ -531,7 +607,7 @@ addGameForm.addEventListener('submit', async (e) => {
     const payload = {
       name: document.getElementById('gameName').value.trim(),
       status,
-      dateStarted: status === 'live_service' ? null : (document.getElementById('gameStart').value || null),
+      dateStarted: document.getElementById('gameStart').value || null,
       dateCompleted: status === 'completed' ? (gameEndInput.value || null) : null,
       hltbHours: document.getElementById('gameHours').value || null,
     };
@@ -563,14 +639,14 @@ addGameForm.addEventListener('submit', async (e) => {
         addGameError.textContent = overrideResult.error || 'Game saved, but the Metacritic URL could not be verified.';
         addGameError.classList.add('visible');
         await loadSummary();
-        await loadGames(state.activeTab);
+        await refreshCurrentView();
         return;
       }
     }
 
     closeAddGameModal();
     await loadSummary();
-    await loadGames(state.activeTab);
+    await refreshCurrentView();
     pollEnrichment();
   } catch {
     addGameError.textContent = 'Something went wrong — check your connection and try again.';
@@ -586,7 +662,7 @@ refreshBtn.addEventListener('click', async () => {
   try {
     await fetch('/api/refresh', { method: 'POST' });
     await loadSummary();
-    await loadGames(state.activeTab);
+    await refreshCurrentView();
     await loadSource();
     pollEnrichment();
   } finally {
@@ -647,6 +723,14 @@ uploadInput.addEventListener('change', async () => {
     }
 
     setUploadStatus(`Loaded ${result.count} games from "${result.displayName}".`, 'success');
+    // A fresh upload replaces the whole library — any in-progress search is
+    // now against stale data, so drop back to a plain All Time view.
+    gameSearchInput.value = '';
+    clearSearchBtn.style.display = 'none';
+    state.searching = false;
+    state.activeTab = 'all';
+    tabsEl.style.display = '';
+    yearChartCardEl.style.display = '';
     await loadSummary();
     await loadGames('all');
     await loadSource();
@@ -676,7 +760,7 @@ async function pollEnrichment() {
   } else if (enrichBannerEl.classList.contains('visible')) {
     // Just finished — refresh the currently visible games so new covers/links show up.
     enrichBannerEl.classList.remove('visible');
-    await loadGames(state.activeTab);
+    await refreshCurrentView();
   }
 }
 

@@ -210,7 +210,7 @@ function buildGameCard(g) {
   let dateText = '';
   if (g.date_completed) {
     dateText = fmtDate(g.date_completed);
-  } else if (g.status === 'in_progress' && g.date_started) {
+  } else if (g.date_started) {
     dateText = `Started ${fmtDate(g.date_started)}`;
   }
 
