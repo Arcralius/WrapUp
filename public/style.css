@@ -829,11 +829,13 @@ a.game-name:hover {
 }
 
 /* --- Mobile / narrow viewports ---
-   The desktop layout packs a title plus six action buttons into one
+   The desktop layout packs a title plus seven action items into one
    non-wrapping row and sizes cards/charts for a wide page; on a phone all
-   of that overflowed. This stacks the header, lets the action buttons wrap,
-   tightens padding, and drops the game grid to two columns. */
-@media (max-width: 640px) {
+   of that overflowed. This collapses the actions into a hamburger menu and
+   tightens the tiles/grid. Breakpoint is 768px (not 640) so phones in
+   landscape and small tablets — anything where the full button row wouldn't
+   fit — also get the hamburger instead of an overflowing navbar. */
+@media (max-width: 768px) {
   .page {
     padding: 20px 14px 60px;
   }
