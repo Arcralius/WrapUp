@@ -151,6 +151,16 @@ function buildCard(g) {
   card.appendChild(cover);
   card.appendChild(body);
   card.appendChild(deleteBtn);
+
+  const playCount = g.play_count || 1;
+  if (playCount > 1) {
+    const replay = document.createElement('span');
+    replay.className = 'replay-badge';
+    replay.textContent = `↺ ×${playCount}`;
+    replay.title = `Played ${playCount} times`;
+    card.appendChild(replay);
+  }
+
   return card;
 }
 

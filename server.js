@@ -146,8 +146,30 @@ function getGamesForUser(userId, { year, status }) {
   query += ' ORDER BY date_completed IS NULL, date_completed ASC, date_started IS NULL, date_started ASC, name ASC';
 
   const rows = db.prepare(query).all(...params);
+
+  // play_count is how many times each game name appears in the user's whole
+  // library — computed here at query time, NOT a stored column, so it works
+  // against any existing database (an instance upgraded from a version
+  // before this feature needs no migration: the count is derived from the
+  // rows that are already there). Computed across ALL the user's games (not
+  // just this filtered slice) so a replayed game shows the same total on
+  // every one of its cards. Exact-name match, matching how the pie chart
+  // aggregates replays.
+  //
+  // Wrapped defensively: if the count ever can't be computed (an unexpected
+  // legacy schema, say), games still return — every card just falls back to
+  // play_count 1 (no replay badge) rather than the whole endpoint failing.
+  let countMap = new Map();
+  try {
+    const counts = db.prepare('SELECT name, COUNT(*) AS c FROM games WHERE user_id = ? GROUP BY name').all(userId);
+    countMap = new Map(counts.map((r) => [r.name, r.c]));
+  } catch (err) {
+    console.error('play_count computation failed, defaulting to 1:', err.message);
+  }
   db.close();
-  return attachMetacritic(rows);
+
+  const withCounts = rows.map((r) => ({ ...r, play_count: countMap.get(r.name) || 1 }));
+  return attachMetacritic(withCounts);
 }
 
 function getSummaryForUser(userId) {

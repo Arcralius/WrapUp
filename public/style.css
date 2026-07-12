@@ -585,6 +585,27 @@ a.game-name:hover {
   background: #e34948;
 }
 
+/* Replay marker — top-left corner of a card, always visible (not
+   hover-gated like edit/delete), shown when a game has been played more
+   than once. */
+.replay-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--series-blue);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+}
+
 /* --- Add Game modal --- */
 
 .modal-overlay {
@@ -785,4 +806,99 @@ a.game-name:hover {
 .pie-legend-hours {
   color: var(--text-muted);
   font-variant-numeric: tabular-nums;
+}
+
+/* --- Mobile / narrow viewports ---
+   The desktop layout packs a title plus six action buttons into one
+   non-wrapping row and sizes cards/charts for a wide page; on a phone all
+   of that overflowed. This stacks the header, lets the action buttons wrap,
+   tightens padding, and drops the game grid to two columns. */
+@media (max-width: 640px) {
+  .page {
+    padding: 20px 14px 60px;
+  }
+
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .topbar h1 {
+    font-size: 26px;
+  }
+  .tagline {
+    font-size: 14px;
+  }
+
+  /* Action buttons wrap onto as many rows as needed and share the width
+     evenly instead of running off the edge of the screen. */
+  .topbar-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .topbar-actions .btn-nav,
+  .topbar-actions .btn-refresh,
+  .topbar-actions .btn-upload {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 10px 12px;
+  }
+  .user-chip {
+    order: -1;              /* show who's logged in first, above the buttons */
+    align-self: flex-start;
+  }
+
+  /* Compact stat tiles on phones: three to a row instead of two, with
+     smaller padding and numbers, so the six-tile block takes two short rows
+     rather than three tall ones and leaves room for the games below. */
+  .hero-stats {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .stat-tile {
+    padding: 10px 10px;
+    border-radius: 10px;
+  }
+  .stat-tile .value {
+    font-size: 18px;
+  }
+  .stat-tile .label {
+    font-size: 10.5px;
+    line-height: 1.25;
+    margin-top: 1px;
+  }
+
+  .chart-card {
+    padding: 16px 16px 6px;
+    margin-bottom: 20px;
+  }
+
+  .game-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 10px;
+  }
+
+  .pie-layout {
+    justify-content: center;
+  }
+
+  .modal-card {
+    padding: 22px 20px;
+  }
+
+  /* Edit/delete are hover-gated on desktop, but phones have no hover — keep
+     them always visible so they're actually reachable by touch. */
+  .game-card .edit-btn,
+  .game-card .delete-btn,
+  .tl-card .delete-btn {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 380px) {
+  /* Very small phones: guarantee two columns rather than one giant card. */
+  .game-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

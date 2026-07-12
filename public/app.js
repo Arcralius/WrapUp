@@ -369,6 +369,21 @@ function buildGameCard(g) {
 
   card.appendChild(cover);
   card.appendChild(body);
+
+  // Replay marker: shown on every card of a game the user has more than one
+  // entry for (e.g. completed it in 2022 and again in 2024). play_count is
+  // the total across the whole library, computed server-side. Guarded so a
+  // response from a server too old to send the field (mixed-version deploy)
+  // simply shows no badge instead of erroring.
+  const playCount = g.play_count || 1;
+  if (playCount > 1) {
+    const replay = document.createElement('span');
+    replay.className = 'replay-badge';
+    replay.textContent = `↺ ×${playCount}`;
+    replay.title = `You've played this ${playCount} times`;
+    card.appendChild(replay);
+  }
+
   return card;
 }
 
