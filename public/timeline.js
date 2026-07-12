@@ -31,6 +31,15 @@ logoutBtn.addEventListener('click', async () => {
   window.location.href = 'login.html';
 });
 
+const navToggle = document.getElementById('navToggle');
+const topbarActions = document.getElementById('topbarActions');
+if (navToggle && topbarActions) {
+  navToggle.addEventListener('click', () => {
+    const open = topbarActions.classList.toggle('open');
+    navToggle.setAttribute('aria-expanded', String(open));
+  });
+}
+
 function fmtHours(hours) {
   if (hours == null) return null;
   const rounded = Math.round(hours * 10) / 10;

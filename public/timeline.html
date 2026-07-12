@@ -10,11 +10,14 @@
 <body>
   <div class="tl-page">
     <header class="topbar tl-topbar">
-      <div>
-        <h1>WrapUp</h1>
-        <p class="tagline">Your gaming, month by month.</p>
+      <div class="topbar-head">
+        <div>
+          <h1>WrapUp</h1>
+          <p class="tagline">Your gaming, month by month.</p>
+        </div>
+        <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="topbarActions">☰</button>
       </div>
-      <div class="topbar-actions">
+      <div class="topbar-actions" id="topbarActions">
         <a class="btn-nav" href="index.html">← Dashboard</a>
         <span class="user-chip" id="userChip"></span>
         <button id="logoutBtn" class="btn-refresh" title="Log out">Log out</button>
