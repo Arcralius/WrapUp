@@ -28,6 +28,51 @@ HTTPS to fetch Metacritic cover art.
   anything; links are revocable and regenerable at any time.
 - **Accounts** — email/username/password signup, salted+hashed passwords
   (scrypt), server-side sessions, and strict per-user data isolation.
+- **Profile sync (optional)** — connect Steam, PlayStation, and/or IGDB from
+  the profile page to backfill missing data. See below.
+
+## Profile sync
+
+All three integrations are **optional, off by default, and bring-your-own-key** —
+WrapUp ships with no credentials and phones nothing home. Configure them on
+the **Profile** page.
+
+They only ever **fill in blanks**: nothing is overwritten, and no game is ever
+created or deleted. Sync is a backfill for the library you already curated, not
+an importer.
+
+| Integration | What you need | What it fills in |
+| --- | --- | --- |
+| **Steam** | A free [Web API key](https://steamcommunity.com/dev/apikey) + your SteamID (raw ID, vanity name, or profile URL) | Achievement unlock times |
+| **PlayStation** | Your `NPSSO` token ([how to get one](https://psn-api.achievements.app/authentication/authenticating-manually)) | Trophy earn times |
+| **Completion times** | A [Twitch/IGDB](https://api-docs.igdb.com/#getting-started) Client ID + Secret (free) | `HLTB hours` for games missing one |
+
+**How the dates are derived.** For each game in your library that's missing a
+date, WrapUp reads that game's achievement/trophy unlock timestamps and applies:
+
+- **earliest unlock → start date**, when the game has no start date.
+- **latest unlock → completion date**, but *only* for games you've marked
+  **completed** that don't have one. A live-service or still-playing game
+  never gets a completion date.
+
+A platform title has to match a library game by name with high confidence
+before it's allowed to write anything — a wrong match here would silently write
+*wrong dates*, so the bar is deliberately strict and unmatched games are simply
+skipped.
+
+**A note on completion times.** These come from **IGDB**, not Metacritic or
+HowLongToBeat. Metacritic publishes scores and reviews, not completion times,
+and has no free API; HowLongToBeat has no public API and blocks automated
+access. IGDB is the only source offering an official, free time-to-beat
+endpoint.
+
+**A note on the PSN token.** Sony publishes no official API, so PSN support
+relies on the community [`psn-api`](https://github.com/achievements-app/psn-api)
+library and an `NPSSO` session token. That token is **as sensitive as your
+PlayStation login** — it authenticates as you, not as a limited-scope app. It's
+stored server-side on *your* instance and never sent back to the browser, but if
+you'd rather not hold a credential like that, just leave PSN blank; everything
+else works without it.
 
 ## Quick start (Docker)
 
@@ -102,6 +147,12 @@ upgrades) without losing anything.
 - Every API route scoped to a user filters by that user's id; share links
   use a separate, entirely read-only route tree that has no write endpoints
   at all, not a permission check that could have a bug in it.
+- Third-party sync credentials (Steam key, PSN `NPSSO`, IGDB secret) are
+  write-only from the browser's point of view: `GET /api/settings` reports
+  only *which* integrations are configured, never the values themselves, so
+  a stored secret can't be read back out of a logged-in session. They're
+  used server-side only, are never included in share links, and are deleted
+  with the account.
 - [`helmet`](https://github.com/helmetjs/helmet) sets a locked-down
   Content-Security-Policy (`script-src 'self'`, no inline scripts anywhere
   in the app) plus the usual `X-Content-Type-Options`/`X-Frame-Options`
@@ -152,12 +203,13 @@ HTML/CSS/JS on the frontend — no build step, no frontend framework.
 ## Project structure
 
 ```
-server.js          Express app, all API routes
+server.js           Express app, all API routes
 lib/                Auth, DB schema/migrations, Metacritic scraping,
-                    markdown parsing, sharing, background enrichment
+                    markdown parsing, sharing, background enrichment,
+                    Steam/PSN/IGDB sync + per-user credential storage
 routes/             Auth and file-upload routes
 scripts/import.js   Markdown → SQLite import
-public/             Dashboard, Timeline, and shared read-only pages
+public/             Dashboard, Timeline, Profile, and shared read-only pages
 db/                 SQLite database (gitignored, Docker volume)
 uploads/            Per-user uploaded markdown files (gitignored, Docker volume)
 ```

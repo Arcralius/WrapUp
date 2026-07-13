@@ -11,6 +11,8 @@ const { normalizeName, parseMetacriticGameUrl, fetchGameByUrl } = require('./lib
 const { runEnrichment, getStatus: getEnrichmentStatus } = require('./lib/enrichment');
 const { requireAuth } = require('./lib/auth');
 const { listShares, getOrCreateShare, regenerateShare, disableShare, resolveToken } = require('./lib/share');
+const { getPublicSettings, saveSettings } = require('./lib/settings');
+const { runSteamSync, runPsnSync, runIgdbSync, getStatus: getSyncStatus } = require('./lib/sync');
 const authRouter = require('./routes/auth');
 const uploadRouter = require('./routes/upload');
 
@@ -415,6 +417,62 @@ app.post('/api/refresh', requireAuth, (req, res) => {
   } catch (err) {
     console.error('refresh failed:', err);
     res.status(500).json({ ok: false, error: 'Could not refresh — check the server logs.' });
+  }
+});
+
+// --- Profile settings + platform sync (authenticated) ---
+//
+// Credentials are write-only from the browser's point of view: GET returns
+// only which integrations are configured (plus the Steam ID, a public
+// identifier), never the keys/tokens themselves.
+
+app.get('/api/settings', requireAuth, (req, res) => {
+  res.json(getPublicSettings(req.user.id));
+});
+
+app.put('/api/settings', requireAuth, (req, res) => {
+  const body = req.body || {};
+  const patch = {};
+
+  // Only copy through fields the client actually sent. An omitted field keeps
+  // its stored value (so the UI can show "already set" without knowing it);
+  // an empty string clears it (turning that integration off).
+  const fields = {
+    steamApiKey: 'steam_api_key',
+    steamId: 'steam_id',
+    psnNpsso: 'psn_npsso',
+    igdbClientId: 'igdb_client_id',
+    igdbClientSecret: 'igdb_client_secret',
+  };
+  for (const [clientField, dbField] of Object.entries(fields)) {
+    if (body[clientField] !== undefined) {
+      if (typeof body[clientField] !== 'string' || body[clientField].length > 500) {
+        return res.status(400).json({ ok: false, error: `Invalid value for ${clientField}.` });
+      }
+      patch[dbField] = body[clientField];
+    }
+  }
+
+  saveSettings(req.user.id, patch);
+  res.json({ ok: true, settings: getPublicSettings(req.user.id) });
+});
+
+app.get('/api/sync/status', requireAuth, (req, res) => {
+  res.json(getSyncStatus(req.user.id));
+});
+
+const SYNC_RUNNERS = { steam: runSteamSync, psn: runPsnSync, igdb: runIgdbSync };
+
+app.post('/api/sync/:provider', requireAuth, async (req, res) => {
+  const runner = SYNC_RUNNERS[req.params.provider];
+  if (!runner) {
+    return res.status(400).json({ ok: false, error: 'Unknown sync provider.' });
+  }
+  try {
+    const status = await runner(req.user.id);
+    res.json({ ok: true, status });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
   }
 });
 

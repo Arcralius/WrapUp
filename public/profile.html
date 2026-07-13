@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Profile — WrapUp</title>
+  <link rel="stylesheet" href="style.css?v=1.9" />
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="topbar-head">
+        <div>
+          <h1>Profile</h1>
+          <p class="tagline">Connect Steam, PSN, and IGDB to fill in missing dates and hours.</p>
+        </div>
+        <button class="nav-toggle" id="navToggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="topbarActions">☰</button>
+      </div>
+      <div class="topbar-actions" id="topbarActions">
+        <a class="btn-nav" href="index.html">← Dashboard</a>
+        <span class="user-chip" id="userChip"></span>
+        <button id="logoutBtn" class="btn-refresh" title="Log out">Log out</button>
+      </div>
+    </header>
+
+    <div class="sync-banner" id="syncBanner">
+      <span class="enrich-spinner"></span>
+      <span id="syncBannerText">Syncing…</span>
+    </div>
+    <p class="upload-status" id="saveStatus"></p>
+
+    <!-- Steam -->
+    <section class="chart-card">
+      <h2>Steam</h2>
+      <p class="auth-hint" style="margin:0 0 14px">
+        Reads your achievement unlock dates and fills in missing dates on games you already have here:
+        the <strong>earliest</strong> unlock becomes the start date, the <strong>latest</strong> becomes the completion date.
+        Nothing already filled in is overwritten, and no new games are added.
+        Your Steam profile and <em>Game details</em> must be set to Public.
+      </p>
+      <form id="steamForm">
+        <div class="auth-field">
+          <label for="steamApiKey">Steam Web API key</label>
+          <input type="password" id="steamApiKey" autocomplete="off" placeholder="Not set" />
+          <span class="auth-hint">Free from <a href="https://steamcommunity.com/dev/apikey" target="_blank" rel="noopener noreferrer">steamcommunity.com/dev/apikey</a>. Stored on your server, never shown again.</span>
+        </div>
+        <div class="auth-field">
+          <label for="steamId">Steam ID or profile URL</label>
+          <input type="text" id="steamId" autocomplete="off" placeholder="76561198… or steamcommunity.com/id/yourname" />
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="auth-submit">Save Steam settings</button>
+          <button type="button" class="btn-refresh" data-sync="steam">Sync achievements</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- PSN -->
+    <section class="chart-card">
+      <h2>PlayStation Network</h2>
+      <p class="auth-hint" style="margin:0 0 14px">
+        Same idea, using your trophy earned-dates. <strong>Heads up:</strong> Sony has no public API, so this uses the
+        same internal endpoints the PlayStation site does, authenticated with an <em>NPSSO token</em> — effectively a
+        session credential for your account. It's stored on your server and never sent back to the browser, but it is
+        unofficial and can stop working whenever Sony changes things.
+      </p>
+      <form id="psnForm">
+        <div class="auth-field">
+          <label for="psnNpsso">NPSSO token</label>
+          <input type="password" id="psnNpsso" autocomplete="off" placeholder="Not set" />
+          <span class="auth-hint">
+            Log in to PlayStation, then open
+            <a href="https://ca.account.sony.com/api/v1/ssocookie" target="_blank" rel="noopener noreferrer">ca.account.sony.com/api/v1/ssocookie</a>
+            and copy the 64-character <code>npsso</code> value. It expires periodically — just paste a fresh one.
+          </span>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="auth-submit">Save PSN settings</button>
+          <button type="button" class="btn-refresh" data-sync="psn">Sync trophies</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- IGDB -->
+    <section class="chart-card">
+      <h2>Completion times (IGDB)</h2>
+      <p class="auth-hint" style="margin:0 0 14px">
+        Fills in the hours-to-beat for games that don't have one yet. Leave this blank and it's simply skipped.
+        <br /><br />
+        <strong>Note:</strong> Metacritic can't do this — it publishes scores and reviews, not completion times, and its
+        only official API is paid/enterprise. HowLongToBeat has no public API and blocks automation. IGDB (owned by
+        Twitch/Amazon) is the one source with an official, free time-to-beat endpoint, so it's what this uses.
+      </p>
+      <form id="igdbForm">
+        <div class="auth-field">
+          <label for="igdbClientId">Twitch Client ID</label>
+          <input type="password" id="igdbClientId" autocomplete="off" placeholder="Not set" />
+        </div>
+        <div class="auth-field">
+          <label for="igdbClientSecret">Twitch Client Secret</label>
+          <input type="password" id="igdbClientSecret" autocomplete="off" placeholder="Not set" />
+          <span class="auth-hint">Create a free app at <a href="https://dev.twitch.tv/console/apps" target="_blank" rel="noopener noreferrer">dev.twitch.tv/console/apps</a> to get both.</span>
+        </div>
+        <div class="modal-actions">
+          <button type="submit" class="auth-submit">Save IGDB settings</button>
+          <button type="button" class="btn-refresh" data-sync="igdb">Fill missing hours</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script src="profile.js?v=1.9"></script>
+</body>
+</html>

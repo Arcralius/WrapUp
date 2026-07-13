@@ -1,6 +1,6 @@
 {
   "name": "wrapup",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "A year-in-review dashboard for completed games, parsed from a markdown list into SQLite.",
   "main": "server.js",
   "scripts": {
@@ -14,6 +14,7 @@
     "express": "^4.19.2",
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",
-    "multer": "^2.2.0"
+    "multer": "^2.2.0",
+    "psn-api": "^2.18.0"
   }
 }

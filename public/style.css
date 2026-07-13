@@ -257,7 +257,8 @@ body {
   color: var(--text-primary);
 }
 
-.enrich-banner {
+.enrich-banner,
+.sync-banner {
   display: none;
   align-items: center;
   gap: 10px;
@@ -268,7 +269,15 @@ body {
   font-size: 13px;
   margin-bottom: 16px;
 }
-.enrich-banner.visible { display: flex; }
+.enrich-banner.visible,
+.sync-banner.visible { display: flex; }
+
+/* Links inside the profile page's explanatory hints. */
+.auth-hint a {
+  color: var(--series-blue);
+  text-decoration: none;
+}
+.auth-hint a:hover { text-decoration: underline; }
 
 .enrich-spinner {
   width: 14px;
