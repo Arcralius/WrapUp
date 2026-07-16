@@ -106,7 +106,145 @@ document.getElementById('igdbForm').addEventListener('submit', (e) => {
   saveFields({ igdbClientId: igdbClientIdEl, igdbClientSecret: igdbClientSecretEl });
 });
 
-const PROVIDER_LABEL = { steam: 'Steam achievements', psn: 'PSN trophies', igdb: 'IGDB completion times' };
+const PROVIDER_LABEL = {
+  steam: 'Steam achievements', psn: 'PSN trophies', igdb: 'IGDB completion times',
+  'steam-import': 'Adding Steam games', 'psn-import': 'Adding PSN games',
+};
+
+// --- Discover picker: choose which unlisted games to add -------------------
+
+const discoverOverlay = document.getElementById('discoverOverlay');
+const discoverTitle = document.getElementById('discoverTitle');
+const discoverSearch = document.getElementById('discoverSearch');
+const discoverList = document.getElementById('discoverList');
+const discoverAll = document.getElementById('discoverAll');
+const discoverCount = document.getElementById('discoverCount');
+const discoverAdd = document.getElementById('discoverAdd');
+const discoverCancel = document.getElementById('discoverCancel');
+
+let discoverProvider = null;
+let discoverCandidates = []; // [{ name, ref, serviceName?, detail }]
+const discoverSelected = new Set(); // refs
+
+function closeDiscover() {
+  discoverOverlay.classList.remove('visible');
+  discoverCandidates = [];
+  discoverSelected.clear();
+}
+
+function renderDiscoverList() {
+  const filter = discoverSearch.value.trim().toLowerCase();
+  const shown = discoverCandidates.filter((c) => !filter || c.name.toLowerCase().includes(filter));
+
+  if (shown.length === 0) {
+    discoverList.innerHTML = `<div class="discover-empty">${
+      discoverCandidates.length === 0 ? 'Every game on this account is already in your library. 🎉' : 'No games match that filter.'
+    }</div>`;
+  } else {
+    discoverList.innerHTML = shown
+      .map((c) => `
+        <label class="discover-item">
+          <input type="checkbox" data-ref="${encodeURIComponent(c.ref)}" ${discoverSelected.has(c.ref) ? 'checked' : ''} />
+          <span class="discover-item-name">${escapeHtml(c.name)}</span>
+          ${c.detail ? `<span class="discover-item-detail">${escapeHtml(c.detail)}</span>` : ''}
+        </label>`)
+      .join('');
+  }
+
+  // "Select all" reflects whether every currently-shown row is selected.
+  discoverAll.checked = shown.length > 0 && shown.every((c) => discoverSelected.has(c.ref));
+  discoverCount.textContent = `${discoverSelected.size} selected`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (ch) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]
+  ));
+}
+
+discoverList.addEventListener('change', (e) => {
+  const cb = e.target.closest('input[data-ref]');
+  if (!cb) return;
+  const ref = decodeURIComponent(cb.dataset.ref);
+  if (cb.checked) discoverSelected.add(ref);
+  else discoverSelected.delete(ref);
+  discoverCount.textContent = `${discoverSelected.size} selected`;
+  const filter = discoverSearch.value.trim().toLowerCase();
+  const shown = discoverCandidates.filter((c) => !filter || c.name.toLowerCase().includes(filter));
+  discoverAll.checked = shown.length > 0 && shown.every((c) => discoverSelected.has(c.ref));
+});
+
+discoverSearch.addEventListener('input', renderDiscoverList);
+
+discoverAll.addEventListener('change', () => {
+  const filter = discoverSearch.value.trim().toLowerCase();
+  const shown = discoverCandidates.filter((c) => !filter || c.name.toLowerCase().includes(filter));
+  for (const c of shown) {
+    if (discoverAll.checked) discoverSelected.add(c.ref);
+    else discoverSelected.delete(c.ref);
+  }
+  renderDiscoverList();
+});
+
+discoverCancel.addEventListener('click', closeDiscover);
+discoverOverlay.addEventListener('click', (e) => { if (e.target === discoverOverlay) closeDiscover(); });
+
+for (const btn of document.querySelectorAll('[data-discover]')) {
+  btn.addEventListener('click', async () => {
+    discoverProvider = btn.dataset.discover;
+    setStatus('');
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Loading…';
+    try {
+      const res = await fetch(`/api/discover/${discoverProvider}`);
+      const result = await res.json();
+      if (!res.ok || !result.ok) {
+        setStatus(result.error || 'Could not load your games.', 'error');
+        return;
+      }
+      discoverCandidates = result.candidates;
+      discoverSelected.clear();
+      discoverTitle.textContent = discoverProvider === 'steam' ? 'Add Steam games' : 'Add PlayStation games';
+      discoverSearch.value = '';
+      renderDiscoverList();
+      discoverOverlay.classList.add('visible');
+    } catch {
+      setStatus('Could not load your games.', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
+}
+
+discoverAdd.addEventListener('click', async () => {
+  if (discoverSelected.size === 0) {
+    setStatus('Pick at least one game to add.', 'error');
+    return;
+  }
+  const items = discoverCandidates
+    .filter((c) => discoverSelected.has(c.ref))
+    .map((c) => ({ name: c.name, ref: c.ref, serviceName: c.serviceName }));
+
+  discoverAdd.disabled = true;
+  try {
+    const res = await fetch(`/api/discover/${discoverProvider}/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items }),
+    });
+    const result = await res.json();
+    if (!res.ok || !result.ok) {
+      setStatus(result.error || 'Could not add the games.', 'error');
+      return;
+    }
+    closeDiscover();
+    pollSync();
+  } finally {
+    discoverAdd.disabled = false;
+  }
+});
 
 for (const btn of document.querySelectorAll('[data-sync]')) {
   btn.addEventListener('click', async () => {
@@ -141,8 +279,11 @@ async function pollSync() {
   } else {
     syncBanner.classList.remove('visible');
     if (status.finishedAt) {
-      const parts = [`${label} finished — ${status.updated} game${status.updated === 1 ? '' : 's'} updated`];
-      if (status.skipped) parts.push(`${status.skipped} with nothing to fill in`);
+      const isImport = String(status.provider || '').endsWith('-import');
+      const verb = isImport ? 'added' : 'updated';
+      const skipNote = isImport ? 'already in your library' : 'with nothing to fill in';
+      const parts = [`${label} finished — ${status.updated} game${status.updated === 1 ? '' : 's'} ${verb}`];
+      if (status.skipped) parts.push(`${status.skipped} ${skipNote}`);
       setStatus(parts.join(', ') + '.', status.lastError ? 'error' : 'success');
       if (status.lastError) {
         setStatus(`${parts.join(', ')}. Last error: ${status.lastError}`, 'error');

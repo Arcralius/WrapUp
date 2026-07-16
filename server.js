@@ -12,7 +12,10 @@ const { runEnrichment, getStatus: getEnrichmentStatus } = require('./lib/enrichm
 const { requireAuth } = require('./lib/auth');
 const { listShares, getOrCreateShare, regenerateShare, disableShare, resolveToken } = require('./lib/share');
 const { getPublicSettings, saveSettings } = require('./lib/settings');
-const { runSteamSync, runPsnSync, runIgdbSync, getStatus: getSyncStatus } = require('./lib/sync');
+const {
+  runSteamSync, runPsnSync, runIgdbSync, getStatus: getSyncStatus,
+  discoverGames, runSteamImport, runPsnImport,
+} = require('./lib/sync');
 const authRouter = require('./routes/auth');
 const uploadRouter = require('./routes/upload');
 
@@ -470,6 +473,48 @@ app.post('/api/sync/:provider', requireAuth, async (req, res) => {
   }
   try {
     const status = await runner(req.user.id);
+    res.json({ ok: true, status });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+// Games on the platform that aren't in the library yet, for the user to pick
+// from. Read-only: never adds anything.
+app.get('/api/discover/:provider', requireAuth, async (req, res) => {
+  if (req.params.provider !== 'steam' && req.params.provider !== 'psn') {
+    return res.status(400).json({ ok: false, error: 'Unknown provider.' });
+  }
+  try {
+    const candidates = await discoverGames(req.user.id, req.params.provider);
+    res.json({ ok: true, candidates });
+  } catch (err) {
+    res.status(400).json({ ok: false, error: err.message });
+  }
+});
+
+const IMPORT_RUNNERS = { steam: runSteamImport, psn: runPsnImport };
+
+// Adds only the games the user explicitly selected in the discover picker.
+app.post('/api/discover/:provider/import', requireAuth, async (req, res) => {
+  const runner = IMPORT_RUNNERS[req.params.provider];
+  if (!runner) {
+    return res.status(400).json({ ok: false, error: 'Unknown provider.' });
+  }
+  const items = Array.isArray(req.body?.items) ? req.body.items : [];
+  // Keep only the fields we trust, and cap the batch so one request can't
+  // queue an unbounded amount of background API work.
+  const cleaned = items
+    .slice(0, 200)
+    .map((it) => ({
+      name: typeof it.name === 'string' ? it.name.slice(0, 200) : '',
+      ref: typeof it.ref === 'string' ? it.ref.slice(0, 64) : '',
+      serviceName: typeof it.serviceName === 'string' ? it.serviceName.slice(0, 32) : undefined,
+    }))
+    .filter((it) => it.name && it.ref);
+
+  try {
+    const status = await runner(req.user.id, cleaned);
     res.json({ ok: true, status });
   } catch (err) {
     res.status(400).json({ ok: false, error: err.message });

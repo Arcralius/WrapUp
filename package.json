@@ -1,6 +1,6 @@
 {
   "name": "wrapup",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "description": "A year-in-review dashboard for completed games, parsed from a markdown list into SQLite.",
   "main": "server.js",
   "scripts": {

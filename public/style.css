@@ -339,14 +339,22 @@ body {
   height: 160px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--baseline);
+  /* When there are more years than fit, scroll the bars horizontally inside
+     the card instead of letting them push the whole page wider than the
+     viewport (which broke the phone layout). */
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
 }
 
 .year-bar-wrap {
-  flex: 1;
+  /* Grow to fill the width when there are only a few years, but never shrink
+     below a readable/tappable column — past that point the chart scrolls. */
+  flex: 1 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 36px;
+  min-width: 40px;
   cursor: pointer;
 }
 
@@ -677,6 +685,83 @@ a.game-name:hover {
   margin-top: 0;
 }
 
+/* --- Discover (add unlisted games) picker --- */
+
+.discover-card {
+  max-width: 460px;
+  display: flex;
+  flex-direction: column;
+}
+.discover-search {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text-primary);
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+.discover-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+.discover-checkall {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+.discover-count {
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.discover-list {
+  max-height: 46vh;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 14px;
+}
+.discover-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.discover-item:last-child {
+  border-bottom: none;
+}
+.discover-item input {
+  flex-shrink: 0;
+}
+.discover-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.discover-item-detail {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.discover-empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
 .share-row {
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -923,6 +1008,30 @@ a.game-name:hover {
   .chart-card {
     padding: 16px 16px 6px;
     margin-bottom: 20px;
+  }
+
+  /* Tighter bars on phones, and let the row scroll (with a little end padding
+     so the last bar clears the card edge) rather than overflow the screen. */
+  .year-chart {
+    gap: 10px;
+    height: 150px;
+    padding-right: 4px;
+  }
+  .year-bar-wrap {
+    min-width: 38px;
+  }
+
+  /* Discover picker: full-width card with trimmed padding so it never spills
+     past the viewport, and a shorter list so the action buttons stay in view. */
+  .discover-card {
+    max-width: 100%;
+    padding: 20px 16px;
+  }
+  .discover-list {
+    max-height: 40vh;
+  }
+  .discover-item {
+    padding: 11px 12px; /* a touch taller for easier tapping */
   }
 
   .game-grid {

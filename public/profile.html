@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Profile — WrapUp</title>
-  <link rel="stylesheet" href="style.css?v=1.9" />
+  <link rel="stylesheet" href="style.css?v=1.10" />
 </head>
 <body>
   <div class="page">
@@ -51,6 +51,7 @@
         <div class="modal-actions">
           <button type="submit" class="auth-submit">Save Steam settings</button>
           <button type="button" class="btn-refresh" data-sync="steam">Sync achievements</button>
+          <button type="button" class="btn-refresh" data-discover="steam">Add games not in library…</button>
         </div>
       </form>
     </section>
@@ -77,6 +78,7 @@
         <div class="modal-actions">
           <button type="submit" class="auth-submit">Save PSN settings</button>
           <button type="button" class="btn-refresh" data-sync="psn">Sync trophies</button>
+          <button type="button" class="btn-refresh" data-discover="psn">Add games not in library…</button>
         </div>
       </form>
     </section>
@@ -109,6 +111,27 @@
     </section>
   </div>
 
-  <script src="profile.js?v=1.9"></script>
+  <!-- Discover picker: choose which unlisted games to add -->
+  <div class="modal-overlay" id="discoverOverlay">
+    <div class="modal-card discover-card">
+      <h2 class="modal-title" id="discoverTitle">Add games</h2>
+      <p class="auth-hint" style="margin:0 0 12px">
+        These are on your account but not in your library. Tick the ones to add — each is added as
+        <em>in progress</em> with its earliest achievement date as the start date, so you can mark them completed later.
+      </p>
+      <input type="search" id="discoverSearch" class="discover-search" placeholder="Filter…" autocomplete="off" />
+      <div class="discover-toolbar">
+        <label class="discover-checkall"><input type="checkbox" id="discoverAll" /> Select all shown</label>
+        <span class="discover-count" id="discoverCount">0 selected</span>
+      </div>
+      <div class="discover-list" id="discoverList"></div>
+      <div class="modal-actions">
+        <button type="button" class="auth-submit" id="discoverAdd">Add selected</button>
+        <button type="button" class="btn-refresh" id="discoverCancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="profile.js?v=1.10"></script>
 </body>
 </html>
